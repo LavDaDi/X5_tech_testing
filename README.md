@@ -4,7 +4,7 @@
 
 ## Ссылки
 - Видео/Скриншоты демонстрации: https://disk.yandex.ru/d/z40N9XJCUbFEkw
-- Релиз APK: [ССЫЛКА_НА_GITHUB_RELEASES]
+- Релиз APK: https://github.com/LavDaDi/X5_tech_testing/releases/tag/v1.0.0
 
 
 
