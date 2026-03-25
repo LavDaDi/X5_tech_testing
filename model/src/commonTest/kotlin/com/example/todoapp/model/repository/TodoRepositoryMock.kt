@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class TodoRepositoryMock : TodoRepository {
+internal class TodoRepositoryMock : TodoRepository {
 
     private val _todos = MutableStateFlow<List<TodoItem>>(emptyList())
 

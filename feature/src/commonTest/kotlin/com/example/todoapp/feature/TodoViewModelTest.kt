@@ -2,6 +2,7 @@ package com.example.todoapp.feature
 
 import com.example.todoapp.model.domain.TodoFilter
 import com.example.todoapp.model.domain.TodoItem
+import com.example.todoapp.model.domain.TodoTag
 import com.example.todoapp.model.repository.TodoRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +20,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -177,6 +179,95 @@ internal class TodoViewModelTest {
 
         collectJob.cancel()
     }
+
+    @Test
+    fun should_add_todo_with_tag() = runTest {
+        val viewModel = createViewModel()
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onTagSelected(TodoTag.WORK)
+        viewModel.onInputTextChanged("Finish report")
+        viewModel.addTodo()
+
+        val todo = viewModel.state.value.todos.first()
+        assertEquals("Finish report", todo.text)
+        assertEquals(TodoTag.WORK, todo.tag)
+        assertNull(viewModel.state.value.selectedTag)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun should_toggle_tag_selection() = runTest {
+        val viewModel = createViewModel()
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onTagSelected(TodoTag.STUDY)
+        assertEquals(TodoTag.STUDY, viewModel.state.value.selectedTag)
+
+        viewModel.onTagSelected(TodoTag.STUDY)
+        assertNull(viewModel.state.value.selectedTag)
+
+        viewModel.onTagSelected(TodoTag.PERSONAL)
+        assertEquals(TodoTag.PERSONAL, viewModel.state.value.selectedTag)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun should_edit_todo_text() = runTest {
+        val viewModel = createViewModel()
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onInputTextChanged("Old text")
+        viewModel.addTodo()
+
+        val todoId = viewModel.state.value.todos.first().id
+
+        viewModel.startEditing(todoId, "Old text")
+        assertEquals(todoId, viewModel.state.value.editingTodoId)
+        assertEquals("Old text", viewModel.state.value.editingText)
+
+        viewModel.onEditingTextChanged("New text")
+        assertEquals("New text", viewModel.state.value.editingText)
+
+        viewModel.saveEditing()
+        assertEquals("New text", viewModel.state.value.todos.first().text)
+        assertNull(viewModel.state.value.editingTodoId)
+
+        collectJob.cancel()
+    }
+
+    @Test
+    fun should_cancel_editing() = runTest {
+        val viewModel = createViewModel()
+        val collectJob = backgroundScope.launch(testDispatcher) {
+            viewModel.state.collect {}
+        }
+
+        viewModel.onInputTextChanged("Original text")
+        viewModel.addTodo()
+
+        val todoId = viewModel.state.value.todos.first().id
+
+        viewModel.startEditing(todoId, "Original text")
+        viewModel.onEditingTextChanged("Changed text")
+        viewModel.cancelEditing()
+
+        assertEquals(
+            "Original text",
+            viewModel.state.value.todos.first().text,
+        )
+        assertNull(viewModel.state.value.editingTodoId)
+
+        collectJob.cancel()
+    }
 }
 
 private class FakeTodoRepository : TodoRepository {
@@ -185,8 +276,8 @@ private class FakeTodoRepository : TodoRepository {
 
     override fun getTodos(): Flow<List<TodoItem>> = _todos.asStateFlow()
 
-    override suspend fun addTodo(text: String) {
-        val item = TodoItem.create(text)
+    override suspend fun addTodo(text: String, tag: TodoTag?) {
+        val item = TodoItem.create(text = text, tag = tag)
         _todos.update { current -> current + item }
     }
 
@@ -197,7 +288,24 @@ private class FakeTodoRepository : TodoRepository {
     override suspend fun toggleTodo(id: String) {
         _todos.update { current ->
             current.map { item ->
-                if (item.id == id) item.copy(isCompleted = !item.isCompleted) else item
+                if (item.id == id) {
+                    item.copy(isCompleted = !item.isCompleted)
+                } else {
+                    item
+                }
+            }
+        }
+    }
+
+    override suspend fun updateTodoText(id: String, newText: String) {
+        if (newText.isBlank()) return
+        _todos.update { current ->
+            current.map { item ->
+                if (item.id == id) {
+                    item.copy(text = newText.trim())
+                } else {
+                    item
+                }
             }
         }
     }

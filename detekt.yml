@@ -1,0 +1,28 @@
+style:
+  MaxLineLength:
+    maxLineLength: 120
+  TrailingCommaOnCallSite:
+    active: true
+    autoCorrect: true
+  TrailingCommaOnDeclarationSite:
+    active: true
+    autoCorrect: true
+  WildcardImport:
+    active: false
+
+formatting:
+  TrailingCommaOnCallSite:
+    active: true
+    autoCorrect: true
+  TrailingCommaOnDeclarationSite:
+    active: true
+    autoCorrect: true
+
+complexity:
+  TooManyFunctions:
+    active: false
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - 'Composable'
